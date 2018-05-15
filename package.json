@@ -1,0 +1,27 @@
+{
+  "name": "isla-discordbot",
+  "version": "0.0.1",
+  "description": "A discord bot that can do things.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/midymyth/isla-discordbot.git"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "isla"
+  ],
+  "author": "midymyth",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/midymyth/isla-discordbot/issues"
+  },
+  "homepage": "https://github.com/midymyth/isla-discordbot#readme",
+  "dependencies": {
+    "discord.js": "^11.3.1"
+  }
+}
