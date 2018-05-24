@@ -1,6 +1,5 @@
 const   discord = require("discord.js");
 const   bot = new discord.Client();
-var     online;
 
 const readline = require("readline");
 const terminal = readline.createInterface({
@@ -25,7 +24,7 @@ const aboutCommand = {
             "Type " + cfg.prefix + "commands to see my commands."
         );
     },
-    info: cfg.simpleName + " - Displays Information About This Bot.",
+    info: cfg.simpleName + " - Displays information about this bot.",
     permissions: "SEND_MESSAGES"
 };
 
@@ -36,8 +35,6 @@ bot.on("ready", () => {
     bot.user.setActivity(cfg.prefix + cfg.simpleName);
 
     commands[cfg.simpleName] = aboutCommand;
-
-    online = true;
 });
 
 bot.on("disconnect", () => {
@@ -53,7 +50,7 @@ function print(msg, content) {
     msg.channel.send(content);
 }
 
-var commands = {
+var commands = { //Bot Commands
     "commands": {
         execute: function(msg) {
             var message = cfg.name + "'s Commands: \n";
@@ -62,18 +59,18 @@ var commands = {
             });
             print(msg, message);
         },
-        info: "commands - List All Commands For This Bot.",
+        info: "commands - List all commands for this bot.",
         permissions: "SEND_MESSAGES"
     },
     "permission": {
         execute: function(msg, args) {
             if (!args[0] || !commands[args[0]]) return;
             print(msg, 
-                getPermission(msg.member.permissions, commands[args[0]].permissions) 
+                getPermission(msg, commands[args[0]].permissions) 
                 ? "You Have Permission." : "You do not have permission."
             );
         },
-        info: "permission [command] - Checks To See If You Can Execute A Command.",
+        info: "permission [command] - Checks to see if you can execute a command.",
         permissions: "SEND_MESSAGES"
     },
     "roll": {
@@ -87,20 +84,21 @@ var commands = {
     }
 }
 
-function getPermission(perms, req) {
-    return perms.has(req);
+function getPermission(msg, req) {
+    if (msg.channel instanceof discord.DMChannel) return true;
+    return msg.member.permissions.has(req);
 }
 
 function parseCommand(msg) {
     var args = msg.content.split(cfg.prefix)[1].split(' ');
     var command = args[0];
     args.splice(0, 1);
-    if (commands[command] != null && getPermission(msg.member.permissions, commands[command].permissions)) {
+    if (commands[command] != null && getPermission(msg, commands[command].permissions)) {
         commands[command].execute(msg, args);
     }
 }
 
-terminal.on("line", (input) => {
+terminal.on("line", (input) => { //Terminal Commands
     input = input.replace("\\n", '\n');
     var args = input.trim().split(' ');
 
@@ -136,7 +134,6 @@ terminal.on("SIGINT", () => {
 });
 
 function exit() {
-    online = false;
     terminal.close();
     process.exit();
 }
