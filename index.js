@@ -1,7 +1,14 @@
 const   discord = require("discord.js");
 const   bot = new discord.Client();
-var     cfg;
+var     online;
 
+const readline = require("readline");
+const terminal = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+
+var cfg;
 try { //Load Config
     cfg = require("./config-override.json");
     console.log("Module config-overide.json found.");
@@ -29,6 +36,12 @@ bot.on("ready", () => {
     bot.user.setActivity(cfg.prefix + cfg.simpleName);
 
     commands[cfg.simpleName] = aboutCommand;
+
+    online = true;
+});
+
+bot.on("disconnect", () => {
+    exit();
 });
 
 bot.on("message", (msg) => {
@@ -65,7 +78,7 @@ var commands = {
     },
     "roll": {
         execute: function(msg, args) {
-            if (args[0] == undefined) args[0] = 6;
+            if (args[0] == undefined || parseInt(args[0]) <= 0)  args[0] = 6;
             var roll = Math.floor(Math.random() * parseInt(args[0]) + 1).toString();
             print(msg, "Out of " + args[0] + ", **" + roll + "** was rolled.");
         },
@@ -82,6 +95,48 @@ function parseCommand(msg) {
     var args = msg.content.split(cfg.prefix)[1].split(' ');
     var command = args[0];
     args.splice(0, 1);
-    if (commands[command] != null && getPermission(msg.member.permissions, commands[command].permissions)) 
+    if (commands[command] != null && getPermission(msg.member.permissions, commands[command].permissions)) {
         commands[command].execute(msg, args);
+    }
+}
+
+terminal.on("line", (input) => {
+    input = input.replace("\\n", '\n');
+    var args = input.trim().split(' ');
+
+    switch(args[0]) {
+        default:
+            console.log("Unkown Command");
+            break;
+        case "exit":
+        case "end":
+        case "kill":
+        case "stop":
+            exit();
+            break;
+        case "print":
+        case "say":
+        case "echo":
+            if (args[1] == undefined) break;
+            var channel = bot.channels.get(args[1]);
+            args.splice(0, 2);
+            channel.send(args.join(' '));
+            break;
+        case "debug":
+            console.log(bot);
+            break;
+        case "config":
+            console.log(cfg);
+            break;
+    }
+});
+
+terminal.on("SIGINT", () => {
+    exit();
+});
+
+function exit() {
+    online = false;
+    terminal.close();
+    process.exit();
 }
