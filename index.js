@@ -68,7 +68,7 @@ var commands = { //Bot Commands
             print(msg, message);
         },
         info: "*commands* - List all commands for this bot.",
-        permissions: "SEND_MESSAGES"
+        permissions: ["SEND_MESSAGES"]
     },
     "permission": {
         execute: function(msg, args) {
@@ -79,7 +79,7 @@ var commands = { //Bot Commands
             );
         },
         info: "*permission [command]* - Checks to see if you can execute a command.",
-        permissions: "SEND_MESSAGES"
+        permissions: ["SEND_MESSAGES"]
     },
     "roll": {
         execute: function(msg, args) {
@@ -88,7 +88,7 @@ var commands = { //Bot Commands
             print(msg, "Out of " + args[0] + ", **" + roll + "** was rolled.");
         },
         info: "*roll [max]* - Rolls a dice.",
-        permissions: "SEND_MESSAGES"
+        permissions: ["SEND_MESSAGES"]
     },
     "db": {
         execute: function(msg, args) {
@@ -121,7 +121,7 @@ var commands = { //Bot Commands
             });
         },
         info: "*db [tag] [nsfw?]* - Retrieves an image from Danbooru.",
-        permissions: "SEND_MESSAGES, ATTACH_FILES"
+        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
     }
 }
 
