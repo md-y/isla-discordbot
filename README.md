@@ -1,4 +1,4 @@
 # IslaBot
-A discord bot that can do things.  <br>
+A discord bot that can do things.
 ***
-Made with [discord.js](https://discord.js.org) and [node.js](https://nodejs.org/)
+Made in [node.js](https://nodejs.org/) using [discord.js](https://discord.js.org).

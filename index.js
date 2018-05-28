@@ -1,5 +1,8 @@
-const   discord = require("discord.js");
-const   bot = new discord.Client();
+const discord = require("discord.js");
+const bot = new discord.Client();
+var app;
+
+const https = require("https");
 
 const readline = require("readline");
 const terminal = readline.createInterface({
@@ -35,6 +38,11 @@ bot.on("ready", () => {
     bot.user.setActivity(cfg.prefix + cfg.simpleName);
 
     commands[cfg.simpleName] = aboutCommand;
+
+    bot.fetchApplication().then((res) => {
+        app = res;
+        console.log(cfg.name + " is ready to use!");
+    });
 });
 
 bot.on("disconnect", () => {
@@ -47,7 +55,7 @@ bot.on("message", (msg) => {
 });
 
 function print(msg, content) {
-    msg.channel.send(content);
+    return msg.channel.send(content);
 }
 
 var commands = { //Bot Commands
@@ -59,7 +67,7 @@ var commands = { //Bot Commands
             });
             print(msg, message);
         },
-        info: "commands - List all commands for this bot.",
+        info: "*commands* - List all commands for this bot.",
         permissions: "SEND_MESSAGES"
     },
     "permission": {
@@ -67,10 +75,10 @@ var commands = { //Bot Commands
             if (!args[0] || !commands[args[0]]) return;
             print(msg, 
                 getPermission(msg, commands[args[0]].permissions) 
-                ? "You Have Permission." : "You do not have permission."
+                ? "You have permission." : "You do not have permission."
             );
         },
-        info: "permission [command] - Checks to see if you can execute a command.",
+        info: "*permission [command]* - Checks to see if you can execute a command.",
         permissions: "SEND_MESSAGES"
     },
     "roll": {
@@ -79,13 +87,46 @@ var commands = { //Bot Commands
             var roll = Math.floor(Math.random() * parseInt(args[0]) + 1).toString();
             print(msg, "Out of " + args[0] + ", **" + roll + "** was rolled.");
         },
-        info: "roll [max] - Rolls a dice.",
+        info: "*roll [max]* - Rolls a dice.",
         permissions: "SEND_MESSAGES"
+    },
+    "db": {
+        execute: function(msg, args) {
+            if (args[0] == undefined) return;
+            var api = "https://danbooru.donmai.us/posts.json?utf8=%E2%9C%93&limit=1&random=true&tags=" + args[0] + '+';
+            api += (args[1] == "true" || args[1] == "yes" || args[1] == "nsfw") ? "rating:e" : "rating:s";
+            let channel = msg.channel;
+
+            channel.startTyping();
+            getJSON(api, (res) => {
+                if (res.length == 0 || res.success == false) {
+                    print(msg, "No image was found.");
+                    channel.stopTyping();
+                } else {
+                    var img = res[0].hasOwnProperty("file_url") ? res[0]["file_url"] : res[0]["source"];
+                    print(msg, {files: [img]})
+                    .then( () => {
+                        channel.stopTyping();
+                    })
+                    .catch( (e) => {
+                        print(msg, img)
+                        .then( () => {
+                            channel.stopTyping();
+                        })
+                        .catch( (err) => {
+                            console.log(e);
+                        });
+                    });
+                }
+            });
+        },
+        info: "*db [tag] [nsfw?]* - Retrieves an image from Danbooru.",
+        permissions: "SEND_MESSAGES, ATTACH_FILES"
     }
 }
 
 function getPermission(msg, req) {
-    if (msg.channel instanceof discord.DMChannel) return true;
+    if (msg.channel instanceof discord.DMChannel || msg.author.id == app.owner.id) return true;
     return msg.member.permissions.has(req);
 }
 
@@ -96,6 +137,23 @@ function parseCommand(msg) {
     if (commands[command] != null && getPermission(msg, commands[command].permissions)) {
         commands[command].execute(msg, args);
     }
+}
+
+function getJSON(url, callback) {
+    https.get(url, (res) => {
+        var str = "";
+
+        res.on("data", (data) => {
+            str += data;
+        });
+
+        res.on("end", () => {
+            if (str[0] != '{' && str[0] != '[') callback([]);
+            callback(JSON.parse(str));
+        });
+    }).on("error", (err) => {
+        callback(err);
+    });
 }
 
 terminal.on("line", (input) => { //Terminal Commands
@@ -125,6 +183,11 @@ terminal.on("line", (input) => { //Terminal Commands
             break;
         case "config":
             console.log(cfg);
+            break;
+        case "meta":
+        case "app":
+        case "oauth2":
+            console.log(app);
             break;
     }
 });
