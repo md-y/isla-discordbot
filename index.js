@@ -94,7 +94,7 @@ var commands = { //Bot Commands
         execute: function(msg, args) {
             if (args[0] == undefined) return;
             var api = "https://danbooru.donmai.us/posts.json?utf8=%E2%9C%93&limit=1&random=true&tags=" + args[0] + '+';
-            api += (args[1] == "true" || args[1] == "yes" || args[1] == "nsfw") ? "rating:e" : "rating:s";
+            api += (args[1] == "true" || args[1] == "yes" || args[1] == "nsfw" || args[1] == "hentai") ? "rating:e" : "rating:s";
             let channel = msg.channel;
 
             channel.startTyping();
