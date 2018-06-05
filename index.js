@@ -45,7 +45,8 @@ bot.on("ready", () => {
     });
 });
 
-bot.on("disconnect", () => {
+bot.on("disconnect", (event) => {
+    console.log("Disconnected with code " + event.code);
     exit();
 });
 
@@ -83,6 +84,7 @@ var commands = { //Bot Commands
     },
     "roll": {
         execute: function(msg, args) {
+            bot.destroy();
             if (args[0] == undefined || parseInt(args[0]) <= 0)  args[0] = 6;
             var roll = Math.floor(Math.random() * parseInt(args[0]) + 1).toString();
             print(msg, "Out of " + args[0] + ", **" + roll + "** was rolled.");
@@ -197,6 +199,11 @@ terminal.on("SIGINT", () => {
 });
 
 function exit() {
-    terminal.close();
-    process.exit();
+    bot.destroy().then(()=> {
+        console.log(cfg.name + " offline.");
+        terminal.close();
+        process.exit();
+    }).catch(()=> {
+        console.log("Cannot log out.");
+    }); 
 }
