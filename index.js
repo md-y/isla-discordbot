@@ -19,6 +19,8 @@ try { //Load Config
     console.log("Module config-overide.json not found or loaded, using config.json.");
 }
 
+var status = 0; //0 = Offline, 1 = Booting up, 2 = Online, 3 = Shutting Down
+
 const aboutCommand = {
     execute: function(msg) {
         print(msg, 
@@ -27,11 +29,20 @@ const aboutCommand = {
             "Type " + cfg.prefix + "commands to see my commands."
         );
     },
-    info: cfg.simpleName + " - Displays information about this bot.",
+    info: '*' + cfg.simpleName + "* - Displays information about this bot.",
     permissions: "SEND_MESSAGES"
 };
 
-bot.login(cfg.token); //Login
+function login() {
+    bot.login(cfg.token).then(()=> {
+        status = 1;
+    }).catch((err) => {
+        console.log("Could not login." + err);
+        exit();
+    });
+}
+login();
+
 
 bot.on("ready", () => {
     console.log(cfg.name + " online.");
@@ -42,12 +53,26 @@ bot.on("ready", () => {
     bot.fetchApplication().then((res) => {
         app = res;
         console.log(cfg.name + " is ready to use!");
+        status = 2;
+    }).catch((err)=>{
+        console.log("Could not grab app info." + err);
+        exit();
     });
 });
 
 bot.on("disconnect", (event) => {
-    console.log("Disconnected with code " + event.code);
-    exit();
+    if (status == 3 || status == 0) {
+        console.log("Disconnected with code " + event.code);
+        exit();
+    } else {
+        console.log("Bot attempted disconnection, but has been told to stay online. (Status Code: " + status + ") " + 
+                    "Logging in again.");
+        bot.destroy().then(()=> {
+            login();
+        }).catch((err)=> {
+            exit();
+        });
+    }
 });
 
 bot.on("message", (msg) => {
@@ -62,7 +87,7 @@ function print(msg, content) {
 var commands = { //Bot Commands
     "commands": {
         execute: function(msg) {
-            var message = cfg.name + "'s Commands: \n";
+            let message = cfg.name + "'s Commands: \n";
             Object.keys(commands).forEach(e => {
                 message += cfg.prefix + commands[e].info + '\n';
             });
@@ -84,9 +109,8 @@ var commands = { //Bot Commands
     },
     "roll": {
         execute: function(msg, args) {
-            bot.destroy();
             if (args[0] == undefined || parseInt(args[0]) <= 0)  args[0] = 6;
-            var roll = Math.floor(Math.random() * parseInt(args[0]) + 1).toString();
+            let roll = Math.floor(Math.random() * parseInt(args[0]) + 1).toString();
             print(msg, "Out of " + args[0] + ", **" + roll + "** was rolled.");
         },
         info: "*roll [max]* - Rolls a dice.",
@@ -95,7 +119,7 @@ var commands = { //Bot Commands
     "db": {
         execute: function(msg, args) {
             if (args[0] == undefined) return;
-            var api = "https://danbooru.donmai.us/posts.json?utf8=%E2%9C%93&limit=1&random=true&tags=" + args[0] + '+';
+            let api = "https://danbooru.donmai.us/posts.json?utf8=%E2%9C%93&limit=1&random=true&tags=" + args[0] + '+';
             api += (args[1] == "true" || args[1] == "yes" || args[1] == "nsfw" || args[1] == "hentai") ? "rating:e" : "rating:s";
             let channel = msg.channel;
 
@@ -105,7 +129,7 @@ var commands = { //Bot Commands
                     print(msg, "No image was found.");
                     channel.stopTyping();
                 } else {
-                    var img = res[0].hasOwnProperty("file_url") ? res[0]["file_url"] : res[0]["source"];
+                    let img = res[0].hasOwnProperty("file_url") ? res[0]["file_url"] : res[0]["source"];
                     print(msg, {files: [img]})
                     .then( () => {
                         channel.stopTyping();
@@ -133,8 +157,8 @@ function getPermission(msg, req) {
 }
 
 function parseCommand(msg) {
-    var args = msg.content.split(cfg.prefix)[1].split(' ');
-    var command = args[0];
+    let args = msg.content.split(cfg.prefix)[1].split(' ');
+    let command = args[0];
     args.splice(0, 1);
     if (commands[command] != null && getPermission(msg, commands[command].permissions)) {
         commands[command].execute(msg, args);
@@ -143,7 +167,7 @@ function parseCommand(msg) {
 
 function getJSON(url, callback) {
     https.get(url, (res) => {
-        var str = "";
+        let str = "";
 
         res.on("data", (data) => {
             str += data;
@@ -191,6 +215,22 @@ terminal.on("line", (input) => { //Terminal Commands
         case "oauth2":
             console.log(app);
             break;
+        case "status":
+            switch (status) {
+                case 0:
+                    console.log("Offline");
+                    break;
+                case 1:
+                    console.log("Booting Up");
+                    break;
+                case 2:
+                    console.log("Online");
+                    break;
+                case 3:
+                    console.log("Shutting Down");
+                    break;
+            }
+            break;
     }
 });
 
@@ -199,6 +239,7 @@ terminal.on("SIGINT", () => {
 });
 
 function exit() {
+    status = 3;
     bot.destroy().then(()=> {
         console.log(cfg.name + " offline.");
         terminal.close();
