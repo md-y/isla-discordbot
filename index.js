@@ -238,6 +238,11 @@ terminal.on("SIGINT", () => {
     exit();
 });
 
+process.on('unhandledRejection', (reason) => {
+    console.log(reason);
+    exit();
+});
+
 function exit() {
     status = 3;
     bot.destroy().then(()=> {
