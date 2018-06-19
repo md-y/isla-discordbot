@@ -76,7 +76,7 @@ bot.on("disconnect", (event) => {
 });
 
 bot.on("message", (msg) => {
-    if (msg.author.id == bot.user.id || msg.content[0] != cfg.prefix) return;
+    if (msg.author.id == bot.user.id || msg.content[0] != cfg.prefix || msg.system) return;
     parseCommand(msg);
 });
 
@@ -158,11 +158,16 @@ function getPermission(msg, req) {
 
 function parseCommand(msg) {
     let args = msg.content.split(cfg.prefix)[1].split(' ');
+    args.forEach(parseArgument);
     let command = args[0];
     args.splice(0, 1);
     if (commands[command] != null && getPermission(msg, commands[command].permissions)) {
         commands[command].execute(msg, args);
     }
+}
+
+function parseArgument(arg, i, array) {
+    array[i] = encodeURI(arg);
 }
 
 function getJSON(url, callback) {
@@ -183,7 +188,6 @@ function getJSON(url, callback) {
 }
 
 terminal.on("line", (input) => { //Terminal Commands
-    input = input.replace("\\n", '\n');
     var args = input.trim().split(' ');
 
     switch(args[0]) {
