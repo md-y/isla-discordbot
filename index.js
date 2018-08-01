@@ -10,6 +10,9 @@ const terminal = readline.createInterface({
     output: process.stdout
 });
 
+const SUCCESS_COLOR = 3120179;
+const ERROR_COLOR = 12337730;
+
 var cfg;
 try { //Load Config
     cfg = require("./config-override.json");
@@ -23,13 +26,16 @@ var status = 0; //0 = Offline, 1 = Booting up, 2 = Online, 3 = Shutting Down
 
 const aboutCommand = {
     execute: function(msg) {
-        print(msg, 
+        print(msg, new discord.RichEmbed({
+            "color": SUCCESS_COLOR,
+            "description":
             "Hello! I am " + cfg.name + ".\n" +
             "I run off of midymyth's code here: https://github.com/midymyth/isla-discordbot \n" +
             "Type " + cfg.prefix + "commands to see my commands."
-        );
+        }));
     },
-    info: '*' + cfg.simpleName + "* - Displays information about this bot.",
+    syntax: cfg.simpleName,
+    info: "Displays information about this bot.",
     permissions: "SEND_MESSAGES"
 };
 
@@ -81,39 +87,85 @@ bot.on("message", (msg) => {
 });
 
 function print(msg, content) {
+    if (content instanceof discord.RichEmbed || content instanceof discord.Attachment) return msg.channel.send("", content);
     return msg.channel.send(content);
 }
 
 var commands = { //Bot Commands
     "commands": {
         execute: function(msg) {
-            let message = cfg.name + "'s Commands: \n";
+            let fields = new Array();
             Object.keys(commands).forEach(e => {
-                message += cfg.prefix + commands[e].info + '\n';
+                fields.push({
+                    "name": cfg.prefix + commands[e].syntax,
+                    "value": commands[e].info
+                })
             });
-            print(msg, message);
+            print(msg, new discord.RichEmbed({
+                "color": SUCCESS_COLOR,
+                "title": cfg.name + "'s Commands: \n",
+                "fields": fields
+            }));
         },
-        info: "*commands* - List all commands for this bot.",
+        syntax: "commands",
+        info: "List all commands for this bot.",
         permissions: ["SEND_MESSAGES"]
     },
     "permission": {
         execute: function(msg, args) {
             if (!args[0] || !commands[args[0]]) return;
-            print(msg, 
-                getPermission(msg, commands[args[0]].permissions) 
-                ? "You have permission." : "You do not have permission."
-            );
+            let has = getPermission(msg, commands[args[0]].permissions);
+            print(msg, new discord.RichEmbed({
+                "color": has ? SUCCESS_COLOR : ERROR_COLOR,
+                "title": has ? "You have permission." : "You do not have permission."
+            }));
         },
-        info: "*permission [command]* - Checks to see if you can execute a command.",
+        syntax: "permission [command]",
+        info: "Checks to see if you can execute a command.",
         permissions: ["SEND_MESSAGES"]
     },
     "roll": {
         execute: function(msg, args) {
-            if (args[0] == undefined || parseInt(args[0]) <= 0)  args[0] = 6;
-            let roll = Math.floor(Math.random() * parseInt(args[0]) + 1).toString();
-            print(msg, "Out of " + args[0] + ", **" + roll + "** was rolled.");
+            if (args[0] == undefined)  args[0] = "1d20";
+            const regex = /(\d+|)d?(\d+|)\+?(\d+|)/i;
+            let parts = regex.exec(args[0]);
+            parts.splice(0, 1);
+            
+            if (parts[0] != '' && parts[1] == '') {
+                parts[1] = parts[0];
+                parts[0] = 1;
+            } 
+            if (parts[0] == '') parts[0] = 1;
+            if (parts[1] == '') parts[1] = 20;
+            if (parts[2] == '') parts[2] = 0;
+
+            for (var i = 0; i < parts.length; i++) {
+                if (!(parts[i] instanceof Number)) parts[i] = parseInt(parts[i]);
+                if (parts[i] > 100) parts[i] = 100;
+            }
+
+            let rolls = new Array();
+            for (var i = 0; i < parts[0]; i++) rolls[i] = Math.floor(Math.random() * (parts[1] - 1) + 1);
+            let roll = parts[0] + 'd' + parts[1] + '+' + parts[2];
+
+            let sum = 0;
+            for (i of rolls) sum += i;
+            sum += parts[2];
+
+            print(msg, new discord.RichEmbed({
+                "color": SUCCESS_COLOR,
+                "title": roll,
+                "description": '*' + rolls.join('*\n*') + '*',
+                "fields": [
+                    {
+                        "name": "Final Value: (+" + parts[2] + ')',
+                        "value": "**" + sum.toString() + "**"
+                    }
+                ]
+            }));
         },
-        info: "*roll [max]* - Rolls a dice.",
+        syntax: "roll [dice notation]",
+        info: "Rolls a dice.",
         permissions: ["SEND_MESSAGES"]
     },
     "db": {
@@ -126,27 +178,33 @@ var commands = { //Bot Commands
             channel.startTyping();
             getJSON(api, (res) => {
                 if (res.length == 0 || res.success == false) {
-                    print(msg, "No image was found.");
-                    channel.stopTyping();
+                    print(msg, new discord.RichEmbed({
+                        "color": ERROR_COLOR,
+                        "title": "No Image Found."
+                    }));
                 } else {
                     let img = res[0].hasOwnProperty("file_url") ? res[0]["file_url"] : res[0]["source"];
-                    print(msg, {files: [img]})
-                    .then( () => {
-                        channel.stopTyping();
-                    })
-                    .catch( (e) => {
-                        print(msg, img)
-                        .then( () => {
-                            channel.stopTyping();
-                        })
-                        .catch( (err) => {
-                            console.log(e);
-                        });
-                    });
+                    print(msg, new discord.RichEmbed({
+                        "title": res[0]["tag_string_artist"],
+                        "url": "https://danbooru.donmai.us/posts/" + res[0]["id"],
+                        "color": SUCCESS_COLOR,
+                        "footer": {
+                            "text": (res[0]["rating"] == 's' ? "Safe For Work" : "Not Safe For Work")
+                        },
+                        "timestamp": res[0]["updated_at"],
+                        "author": {
+                          "name": "Danbooru"
+                        },
+                        "image": {
+                            "url": img
+                        }
+                    }));
                 }
+                channel.stopTyping();
             });
         },
-        info: "*db [tag] [nsfw?]* - Retrieves an image from Danbooru.",
+        syntax: "db [tag] [nsfw?]",
+        info: "Retrieves an image from Danbooru.",
         permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
     }
 }
