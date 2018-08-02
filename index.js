@@ -114,10 +114,12 @@ var commands = { //Bot Commands
     "permission": {
         execute: function(msg, args) {
             if (!args[0] || !commands[args[0]]) return;
-            let has = getPermission(msg, commands[args[0]].permissions);
+            let perms = commands[args[0]].permissions;
+            let has = getPermission(msg, perms);
             print(msg, new discord.RichEmbed({
                 "color": has ? SUCCESS_COLOR : ERROR_COLOR,
-                "title": has ? "You have permission." : "You do not have permission."
+                "title": has ? "You have permission." : "You do not have permission.",
+                "description": "Required Permissions: " + perms.join(", ")
             }));
         },
         syntax: "permission [command]",
@@ -139,13 +141,13 @@ var commands = { //Bot Commands
             if (parts[1] == '') parts[1] = 20;
             if (parts[2] == '') parts[2] = 0;
 
-            for (var i = 0; i < parts.length; i++) {
+            for (let i = 0; i < parts.length; i++) {
                 if (!(parts[i] instanceof Number)) parts[i] = parseInt(parts[i]);
                 if (parts[i] > 100) parts[i] = 100;
             }
 
             let rolls = new Array();
-            for (var i = 0; i < parts[0]; i++) rolls[i] = Math.floor(Math.random() * (parts[1] - 1) + 1);
+            for (let i = 0; i < parts[0]; i++) rolls[i] = Math.floor(Math.random() * parts[1] + 1);
             let roll = parts[0] + 'd' + parts[1] + '+' + parts[2];
 
             let sum = 0;
@@ -183,15 +185,16 @@ var commands = { //Bot Commands
                         "title": "No Image Found."
                     }));
                 } else {
-                    let img = res[0].hasOwnProperty("file_url") ? res[0]["file_url"] : res[0]["source"];
+                    let post = res[0];
+                    let img = post.hasOwnProperty("file_url") ? post["file_url"] : post["source"];
                     print(msg, new discord.RichEmbed({
-                        "title": res[0]["tag_string_artist"],
-                        "url": "https://danbooru.donmai.us/posts/" + res[0]["id"],
+                        "title": post["tag_string_artist"],
+                        "url": "https://danbooru.donmai.us/posts/" + post["id"],
                         "color": SUCCESS_COLOR,
                         "footer": {
-                            "text": (res[0]["rating"] == 's' ? "Safe For Work" : "Not Safe For Work")
+                            "text": (post["rating"] == 's' ? "Safe For Work" : "Not Safe For Work")
                         },
-                        "timestamp": res[0]["updated_at"],
+                        "timestamp": post["updated_at"],
                         "author": {
                           "name": "Danbooru"
                         },
@@ -246,7 +249,7 @@ function getJSON(url, callback) {
 }
 
 terminal.on("line", (input) => { //Terminal Commands
-    var args = input.trim().split(' ');
+    let args = input.trim().split(' ');
 
     switch(args[0]) {
         default:
@@ -262,7 +265,7 @@ terminal.on("line", (input) => { //Terminal Commands
         case "say":
         case "echo":
             if (args[1] == undefined) break;
-            var channel = bot.channels.get(args[1]);
+            let channel = bot.channels.get(args[1]);
             args.splice(0, 2);
             channel.send(args.join(' '));
             break;
