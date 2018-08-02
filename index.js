@@ -36,7 +36,7 @@ const aboutCommand = {
     },
     syntax: cfg.simpleName,
     info: "Displays information about this bot.",
-    permissions: "SEND_MESSAGES"
+    permissions: ["SEND_MESSAGES"]
 };
 
 function login() {
