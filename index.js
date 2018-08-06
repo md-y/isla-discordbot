@@ -214,7 +214,7 @@ var commands = { //Bot Commands
 
 function getPermission(msg, req) {
     if (msg.channel instanceof discord.DMChannel || msg.author.id == app.owner.id) return true;
-    return msg.member.permissions.has(req);
+    return msg.channel.permissionsFor(msg.member).has(req);
 }
 
 function parseCommand(msg) {
@@ -222,9 +222,17 @@ function parseCommand(msg) {
     args.forEach(parseArgument);
     let command = args[0];
     args.splice(0, 1);
-    if (commands[command] != null && getPermission(msg, commands[command].permissions)) {
-        commands[command].execute(msg, args);
+    
+    if (commands[command] == null) return;
+    if (!getPermission(msg, commands[command].permissions)) {
+        print(msg, new discord.RichEmbed({
+            "color": ERROR_COLOR,
+            "title": "You do not have permission."
+        }));
+        return;
     }
+    
+    commands[command].execute(msg, args);
 }
 
 function parseArgument(arg, i, array) {
