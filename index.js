@@ -24,21 +24,6 @@ try { //Load Config
 
 var status = 0; //0 = Offline, 1 = Booting up, 2 = Online, 3 = Shutting Down
 
-const aboutCommand = {
-    execute: function(msg) {
-        print(msg, new discord.RichEmbed({
-            "color": SUCCESS_COLOR,
-            "description":
-            "Hello! I am " + cfg.name + ".\n" +
-            "I run off of midymyth's code here: https://github.com/midymyth/isla-discordbot \n" +
-            "Type " + cfg.prefix + "commands to see my commands."
-        }));
-    },
-    syntax: cfg.simpleName,
-    info: "Displays information about this bot.",
-    permissions: ["SEND_MESSAGES"]
-};
-
 function login() {
     bot.login(cfg.token).then(()=> {
         status = 1;
@@ -90,6 +75,21 @@ function print(msg, content) {
     if (content instanceof discord.RichEmbed || content instanceof discord.Attachment) return msg.channel.send("", content);
     return msg.channel.send(content);
 }
+
+const aboutCommand = {
+    execute: function(msg) {
+        print(msg, new discord.RichEmbed({
+            "color": SUCCESS_COLOR,
+            "description":
+            "Hello! I am " + cfg.name + ".\n" +
+            "I run off of midymyth's code here: https://github.com/midymyth/isla-discordbot \n" +
+            "Type " + cfg.prefix + "commands to see my commands."
+        }));
+    },
+    syntax: cfg.simpleName,
+    info: "Displays information about this bot.",
+    permissions: ["SEND_MESSAGES"]
+};
 
 var commands = { //Bot Commands
     "commands": {
@@ -166,7 +166,7 @@ var commands = { //Bot Commands
                 ]
             }));
         },
-        syntax: "roll [dice notation]",
+        syntax: "roll (dice notation)",
         info: "Rolls a dice.",
         permissions: ["SEND_MESSAGES"]
     },
@@ -206,8 +206,114 @@ var commands = { //Bot Commands
                 channel.stopTyping();
             });
         },
-        syntax: "db [tag] [nsfw?]",
+        syntax: "db [tag] (nsfw?)",
         info: "Retrieves an image from Danbooru.",
+        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
+    },
+    "md": {
+        execute: function(msg, args) {
+            const api = "https://mangadex.org/";
+
+            const onlyDigits = /^\d+$/;
+            const searchId = /<a.+href="\/manga\/(\d+)\/.+".+>[^>]+<\/a>/mi;
+
+            let channel = msg.channel;
+
+            const unknownManga = function() {
+                print(msg, new discord.RichEmbed({
+                    "color": ERROR_COLOR,
+                    "title": "Unknown Manga"
+                }));
+                if (channel.typing) channel.stopTyping();
+            }
+
+            if (args[0] == undefined) {
+                print(msg, new discord.RichEmbed({
+                    "color": ERROR_COLOR,
+                    "title": "Please enter a MangaDex ID or Manga Title"
+                }));
+                return;
+            }
+            
+            const getManga = (mangaId) => {
+                getJSON(api + "api/manga/" + mangaId, (res)=>{
+                    if (res.length == 0 || res.status == "Manga ID does not exist.") {
+                        unknownManga();
+                    } else {
+                        let manga = res["manga"];
+                        let description = parseMarkdown(manga["description"]);
+                        if (description.length >= 1024) description = description.substring(0, 1024) + "...";
+
+                        let chapters = res["chapter"];
+                        let latestChapter = {
+                            "title": "There are no chapters in your language.", 
+                            "url": api + "manga/" + mangaId, 
+                            "timestamp": 0,
+                            "volume": "",
+                            "chapter": ""
+                        };
+                        for (i of Object.keys(chapters)) {
+                            if (chapters[i].lang_code == "gb" && latestChapter.timestamp <= chapters[i].timestamp) {
+                                latestChapter = chapters[i];
+                                latestChapter.id = i;
+                                latestChapter.url = api + "chapter/" + i;
+                                if (latestChapter.title == "") latestChapter.title = "Chapter";
+                                if (latestChapter.volume != "") latestChapter.volume = "Vol. " + latestChapter.volume;
+                                if (latestChapter.chapter != "") latestChapter.chapter = "Ch. " + latestChapter.chapter;
+                            }
+                        }
+                        
+
+                        print(msg, new discord.RichEmbed({
+                            "title": manga["title"],
+                            "url": api + "manga/" + mangaId,
+                            "color": SUCCESS_COLOR,
+                            "description": description,
+                            "author": {
+                            "name": "MangaDex"
+                            },
+                            "footer": {
+                                "text": manga["lang_name"],
+                                "icon_url": api + "images/flags/" + manga["lang_flag"] + ".png"
+                            },
+                            "thumbnail": {
+                                "url": "https://mangadex.org" + manga["cover_url"]
+                            },
+                            "fields": [
+                                {
+                                    "name": "Author",
+                                    "value": manga["author"],
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Artist",
+                                    "value": manga["artist"],
+                                    "inline": true
+                                },
+                                {
+                                    "name": "Most Recent Chapter: " + latestChapter.volume + " " + latestChapter.chapter,
+                                    "value": "[" + (latestChapter.title) +"](" + latestChapter.url + ")"
+                                }
+                            ]
+                        }));
+                        channel.stopTyping();
+                    }
+                }); 
+            }
+
+            channel.startTyping();
+            if (onlyDigits.test(args[0]) && args.length == 1) {
+                getManga(args[0]);
+            } else { //Title Search
+                getHttp(api + "quick_search/" + encodeURI(args.join(" ")), (res)=>{
+                    let groups = searchId.exec(res);
+                    if (groups != undefined && groups != null) getManga(groups[1]);
+                    else unknownManga();
+                });
+            }
+        },
+        syntax: "md [id/title]",
+        info: "Retrieves readable manga from MangaDex.",
         permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
     }
 }
@@ -239,7 +345,29 @@ function parseArgument(arg, i, array) {
     array[i] = encodeURI(arg);
 }
 
-function getJSON(url, callback) {
+function parseMarkdown(str) {
+    const patterns = {
+        "[i]": "*",
+        "[/i]": "*",
+        "[b]": "**",
+        "[/b]": "**",
+        "&quot;": '"',
+        "&amp;": "&",
+        "&lt;": "<",
+        "&gt;": ">",
+        "&rsquo;": "'",
+        "&lsquo;": "'"
+    }
+
+    let oldStr = "";
+    while(oldStr != str) {
+        oldStr = str;
+        for (i of Object.keys(patterns)) str = str.replace(i, patterns[i]);
+    }
+    return str;
+}
+
+function getHttp(url, callback) {
     https.get(url, (res) => {
         let str = "";
 
@@ -248,11 +376,17 @@ function getJSON(url, callback) {
         });
 
         res.on("end", () => {
-            if (str[0] != '{' && str[0] != '[') callback([]);
-            callback(JSON.parse(str));
+            callback(str);
         });
     }).on("error", (err) => {
         callback(err);
+    });
+}
+
+function getJSON(url, callback) {
+    getHttp(url, (str)=>{
+        if (str[0] != '{' && str[0] != '[') callback([]);
+        callback(JSON.parse(str));
     });
 }
 
