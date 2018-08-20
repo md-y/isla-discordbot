@@ -215,7 +215,7 @@ var commands = { //Bot Commands
             const api = "https://mangadex.org/";
 
             const onlyDigits = /^\d+$/;
-            const searchId = /<a.+href="\/manga\/(\d+)\/.+".+>[^>]+<\/a>/mi;
+            const searchId = /<a.+href="\/title\/(\d+)\/.+".+>[^>]+<\/a>/mi;
 
             let channel = msg.channel;
 
@@ -252,14 +252,16 @@ var commands = { //Bot Commands
                             "volume": "",
                             "chapter": ""
                         };
-                        for (i of Object.keys(chapters)) {
-                            if (chapters[i].lang_code == "gb" && latestChapter.timestamp <= chapters[i].timestamp) {
-                                latestChapter = chapters[i];
-                                latestChapter.id = i;
-                                latestChapter.url = api + "chapter/" + i;
-                                if (latestChapter.title == "") latestChapter.title = "Chapter";
-                                if (latestChapter.volume != "") latestChapter.volume = "Vol. " + latestChapter.volume;
-                                if (latestChapter.chapter != "") latestChapter.chapter = "Ch. " + latestChapter.chapter;
+                        if (chapters != null && chapters != undefined) {
+                            for (i of Object.keys(chapters)) {
+                                if (chapters[i].lang_code == "gb" && latestChapter.timestamp <= chapters[i].timestamp) {
+                                    latestChapter = chapters[i];
+                                    latestChapter.id = i;
+                                    latestChapter.url = api + "chapter/" + i;
+                                    if (latestChapter.title == "") latestChapter.title = "Chapter";
+                                    if (latestChapter.volume != "") latestChapter.volume = "Vol. " + latestChapter.volume;
+                                    if (latestChapter.chapter != "") latestChapter.chapter = "Ch. " + latestChapter.chapter;
+                                }
                             }
                         }
                         
