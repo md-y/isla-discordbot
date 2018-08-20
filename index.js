@@ -317,6 +317,44 @@ var commands = { //Bot Commands
         syntax: "md [id/title]",
         info: "Retrieves readable manga from MangaDex.",
         permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
+    },
+    "xkcd": {
+        execute: function(msg, args) {
+            const api = "https://xkcd.com/";
+            const suffix = "info.0.json";
+
+            let request = api;
+            if (args[0] == undefined) request += suffix;
+            else request += args[0] + "/" + suffix;
+
+            const explainApi = "https://www.explainxkcd.com/wiki/index.php/";
+
+            getJSON(request, (res)=>{
+                if (res.length == 0) {
+                    print(msg, new discord.RichEmbed({
+                        "color": ERROR_COLOR,
+                        "title": "Unknown Comic"
+                    }));
+                } else {
+                    print(msg, new discord.RichEmbed({
+                        "title": res["safe_title"],
+                        "url": api + res["num"],
+                        "color": SUCCESS_COLOR,
+                        "description": res["alt"] + "\n[Explanation](" + explainApi + res["num"] + ")",
+                        "timestamp": (new Date(parseInt(res["year"]), parseInt(res["month"]) - 1, parseInt(res["day"]))).toISOString(),
+                        "author": {
+                          "name": "XKCD"
+                        },
+                        "image": {
+                            "url": res["img"]
+                        }
+                    }));
+                }
+            });
+        },
+        syntax: "xkcd (number)",
+        info: "Retrieves a XKCD comic.",
+        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
     }
 }
 
@@ -387,7 +425,10 @@ function getHttp(url, callback) {
 
 function getJSON(url, callback) {
     getHttp(url, (str)=>{
-        if (str[0] != '{' && str[0] != '[') callback([]);
+        if (str[0] != '{' && str[0] != '[') {
+            callback([]);
+            return;
+        }
         callback(JSON.parse(str));
     });
 }
