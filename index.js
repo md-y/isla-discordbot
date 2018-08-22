@@ -67,7 +67,7 @@ bot.on("disconnect", (event) => {
 });
 
 bot.on("message", (msg) => {
-    if (msg.author.id == bot.user.id || msg.content[0] != cfg.prefix || msg.system) return;
+    if (msg.author.bot|| msg.content[0] != cfg.prefix || msg.system) return;
     parseCommand(msg);
 });
 
@@ -172,7 +172,7 @@ var commands = { //Bot Commands
     },
     "db": {
         execute: function(msg, args) {
-            if (args[0] == undefined) return;
+            if (args[0] == undefined) args[0] = "";
             let api = "https://danbooru.donmai.us/posts.json?utf8=%E2%9C%93&limit=1&random=true&tags=" + args[0] + '+';
             api += (args[1] == "true" || args[1] == "yes" || args[1] == "nsfw" || args[1] == "hentai") ? "rating:e" : "rating:s";
             let channel = msg.channel;
@@ -196,7 +196,8 @@ var commands = { //Bot Commands
                         },
                         "timestamp": post["updated_at"],
                         "author": {
-                          "name": "Danbooru"
+                          "name": "Danbooru",
+                          "url": "https://danbooru.donmai.us/"
                         },
                         "image": {
                             "url": img
@@ -206,7 +207,7 @@ var commands = { //Bot Commands
                 channel.stopTyping();
             });
         },
-        syntax: "db [tag] (nsfw?)",
+        syntax: "db (tag) (nsfw?)",
         info: "Retrieves an image from Danbooru.",
         permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
     },
@@ -272,7 +273,8 @@ var commands = { //Bot Commands
                             "color": SUCCESS_COLOR,
                             "description": description,
                             "author": {
-                            "name": "MangaDex"
+                                "name": "MangaDex",
+                                "url": "https://mangadex.org/"
                             },
                             "footer": {
                                 "text": manga["lang_name"],
@@ -340,10 +342,11 @@ var commands = { //Bot Commands
                         "title": res["safe_title"],
                         "url": api + res["num"],
                         "color": SUCCESS_COLOR,
-                        "description": res["alt"] + "\n[Explanation](" + explainApi + res["num"] + ")",
+                        "description": res["alt"] + "\n\n[Explanation](" + explainApi + res["num"] + ")",
                         "timestamp": (new Date(parseInt(res["year"]), parseInt(res["month"]) - 1, parseInt(res["day"]))).toISOString(),
                         "author": {
-                          "name": "XKCD"
+                          "name": "xkcd",
+                          'url': "https://xkcd.com/"
                         },
                         "image": {
                             "url": res["img"]
@@ -354,6 +357,38 @@ var commands = { //Bot Commands
         },
         syntax: "xkcd (number)",
         info: "Retrieves a XKCD comic.",
+        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
+    },
+    "bool": {
+        execute: function(msg, args) {
+            const api = "https://yesno.wtf/api";
+
+            if (args[0] == undefined) args[0] = "";
+            else args[0] = "`" + args.join(" ") + "`";
+
+            getJSON(api, (res)=>{
+                if (res.length == 0) {
+                    print(msg, new discord.RichEmbed({
+                        "color": ERROR_COLOR,
+                        "tile": "Cannot Access API"
+                    }));
+                } else {
+                    print(msg, new discord.RichEmbed({
+                        "color": SUCCESS_COLOR,
+                        "author": {
+                            "name": "yesno.wtf",
+                            "url": "https://yesno.wtf/"
+                        },
+                        "title": args[0] + " **" + res["answer"].toUpperCase() + "**",
+                        "image": {
+                            "url": res["image"]
+                        }
+                    }))
+                }
+            });
+        },
+        syntax: "bool (question)",
+        info: "Answers your boolean questions (Yes or No).",
         permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
     }
 }
@@ -398,6 +433,8 @@ function parseMarkdown(str) {
         "&rsquo;": "'",
         "&lsquo;": "'"
     }
+
+    str = decodeURI(str);
 
     let oldStr = "";
     while(oldStr != str) {
