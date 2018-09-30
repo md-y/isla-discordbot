@@ -390,6 +390,41 @@ var commands = { //Bot Commands
         syntax: "bool (question)",
         info: "Answers your boolean questions (Yes or No).",
         permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
+    },
+    "stats": {
+        execute: function(msg, args) {
+            print(msg, new discord.RichEmbed({
+                "color": SUCCESS_COLOR,
+                "author": {
+                    "name": cfg.name,
+                    "url": "https://github.com/midymyth/isla-discordbot"
+                },
+                "thumbnail": {
+                    "url": app.iconURL
+                },
+                "fields": [
+                    {
+                        "name": "Online Time",
+                        "value": (bot.uptime/1000).toString() + " seconds"
+                    },
+                    {
+                        "name": "Online Since",
+                        "value": bot.readyAt.toDateString()
+                    },
+                    {
+                        "name": "Joined Servers",
+                        "value": bot.guilds.size
+                    },
+                    {
+                        "name": "Joined Channels",
+                        "value": bot.channels.size
+                    }
+                ]
+            }));
+        },
+        syntax: "stats",
+        info: "Displays the stats of this bot",
+        permissions: ["SEND_MESSAGES"]
     }
 }
 
