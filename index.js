@@ -216,7 +216,7 @@ var commands = { //Bot Commands
             const api = "https://mangadex.org/";
 
             const onlyDigits = /^\d+$/;
-            const searchId = /<a.+href="\/title\/(\d+)\/.+".+>[^>]+<\/a>/mi;
+            const searchId = /<a.*href="\/title\/(\d+)\/.+".*>/mi;
 
             let channel = msg.channel;
 
