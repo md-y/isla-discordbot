@@ -2,5 +2,10 @@
     "token": "----",
     "name": "Isla Bot",
     "simpleName": "islabot",
-    "prefix": "!"
+    "prefix": ";",
+    "aliases": {
+        "r": "roll",
+        "help": "commands",
+        "jojo": "db jojo_no_kimyou_na_bouken"
+    }
 }

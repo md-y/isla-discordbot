@@ -13,7 +13,7 @@ const terminal = readline.createInterface({
 const SUCCESS_COLOR = 3120179;
 const ERROR_COLOR = 12337730;
 
-var cfg;
+var cfg, aliases;
 try { //Load Config
     cfg = require("./config-override.json");
     console.log("Module config-overide.json found.");
@@ -40,6 +40,7 @@ bot.on("ready", () => {
     bot.user.setActivity(cfg.prefix + cfg.simpleName);
 
     commands[cfg.simpleName] = aboutCommand;
+    aliases = cfg['aliases']
 
     bot.fetchApplication().then((res) => {
         app = res;
@@ -99,7 +100,13 @@ var commands = { //Bot Commands
                 fields.push({
                     "name": cfg.prefix + commands[e].syntax,
                     "value": commands[e].info
-                })
+                });
+            });
+            Object.keys(aliases).forEach(e => {
+                fields.push({
+                    "name": cfg.prefix + e + "  *(Alias)*",
+                    "value": cfg.prefix + aliases[e]
+                });
             });
             print(msg, new discord.RichEmbed({
                 "color": SUCCESS_COLOR,
@@ -436,9 +443,12 @@ function getPermission(msg, req) {
 function parseCommand(msg) {
     let args = msg.content.split(cfg.prefix)[1].split(' ');
     args.forEach(parseArgument);
-    let command = args[0];
-    args.splice(0, 1);
-    
+    let command = args.splice(0, 1);
+
+    if (command in aliases) {
+        args = aliases[command].split(' ').concat(args);
+        command = args.splice(0, 1);
+    }
     if (commands[command] == null) return;
     if (!getPermission(msg, commands[command].permissions)) {
         print(msg, new discord.RichEmbed({
