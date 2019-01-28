@@ -1,49 +1,59 @@
 const discord = require("discord.js");
 const bot = new discord.Client();
-var app;
+module.exports.bot = bot;
 
-const https = require("https");
+const terminal = require("./js/terminal");
+const util = require("./js/util.js");
 
-const readline = require("readline");
-const terminal = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
+module.exports.SUCCESS_COLOR = 3120179;
+module.exports.ERROR_COLOR = 12337730;
+var app, cfg, aliases;
 
-const SUCCESS_COLOR = 3120179;
-const ERROR_COLOR = 12337730;
-
-var cfg, aliases;
-try { //Load Config
-    cfg = require("./config-override.json");
-    console.log("Module config-overide.json found.");
-} catch (err) {
-    cfg = require("./config.json");
-    console.log("Module config-overide.json not found or loaded, using config.json.");
-}
+var commands = {};
 
 var status = 0; //0 = Offline, 1 = Booting up, 2 = Online, 3 = Shutting Down
+module.exports.status = status;
+
+//Load Config and Login
+(function () {
+    try { 
+        cfg = require("./config-override.json");
+        console.log("Module config-overide.json found.");
+    } catch (err) {
+        cfg = require("./config.json");
+        console.log("Module config-overide.json not found or loaded, using config.json.");
+    }
+    module.exports.cfg = cfg;
+
+    for (let i in cfg.commands) {
+        if (i == cfg.aboutCommand) commands[cfg.simpleName] = require(cfg.commands[i]);
+        else commands[i] = require(cfg.commands[i]);
+    }
+    module.exports.commands = commands;
+
+    login();
+})();
 
 function login() {
     bot.login(cfg.token).then(()=> {
+        console.log("Logged In.");
         status = 1;
     }).catch((err) => {
         console.log("Could not login." + err);
         exit();
     });
 }
-login();
-
 
 bot.on("ready", () => {
     console.log(cfg.name + " online.");
     bot.user.setActivity(cfg.prefix + cfg.simpleName);
 
-    commands[cfg.simpleName] = aboutCommand;
     aliases = cfg['aliases']
+    module.exports.aliases = aliases;
 
     bot.fetchApplication().then((res) => {
         app = res;
+        module.exports.app = app;
         console.log(cfg.name + " is ready to use!");
         status = 2;
     }).catch((err)=>{
@@ -58,7 +68,7 @@ bot.on("disconnect", (event) => {
         exit();
     } else {
         console.log("Bot attempted disconnection, but has been told to stay online. (Status Code: " + status + ") " + 
-                    "Logging in again.");
+                    "Logging out and logging in again.");
         bot.destroy().then(()=> {
             login();
         }).catch((err)=> {
@@ -74,371 +84,17 @@ bot.on("message", (msg) => {
 
 function print(msg, content) {
     if (content instanceof discord.RichEmbed || content instanceof discord.Attachment) return msg.channel.send("", content);
-    return msg.channel.send(content);
-}
-
-const aboutCommand = {
-    execute: function(msg) {
-        print(msg, new discord.RichEmbed({
-            "color": SUCCESS_COLOR,
-            "description":
-            "Hello! I am " + cfg.name + ".\n" +
-            "I run off of midymyth's code here: https://github.com/midymyth/isla-discordbot \n" +
-            "Type " + cfg.prefix + "commands to see my commands."
-        }));
-    },
-    syntax: cfg.simpleName,
-    info: "Displays information about this bot.",
-    permissions: ["SEND_MESSAGES"]
-};
-
-var commands = { //Bot Commands
-    "commands": {
-        execute: function(msg) {
-            let fields = new Array();
-            Object.keys(commands).forEach(e => {
-                fields.push({
-                    "name": cfg.prefix + commands[e].syntax,
-                    "value": commands[e].info
-                });
-            });
-            Object.keys(aliases).forEach(e => {
-                fields.push({
-                    "name": cfg.prefix + e + "  *(Alias)*",
-                    "value": cfg.prefix + aliases[e]
-                });
-            });
-            print(msg, new discord.RichEmbed({
-                "color": SUCCESS_COLOR,
-                "title": cfg.name + "'s Commands: \n",
-                "fields": fields
-            }));
-        },
-        syntax: "commands",
-        info: "List all commands for this bot.",
-        permissions: ["SEND_MESSAGES"]
-    },
-    "permission": {
-        execute: function(msg, args) {
-            if (!args[0] || !commands[args[0]]) return;
-            let perms = commands[args[0]].permissions;
-            let has = getPermission(msg, perms);
-            print(msg, new discord.RichEmbed({
-                "color": has ? SUCCESS_COLOR : ERROR_COLOR,
-                "title": has ? "You have permission." : "You do not have permission.",
-                "description": "Required Permissions: " + perms.join(", ")
-            }));
-        },
-        syntax: "permission [command]",
-        info: "Checks to see if you can execute a command.",
-        permissions: ["SEND_MESSAGES"]
-    },
-    "roll": {
-        execute: function(msg, args) {
-            if (args[0] == undefined)  args[0] = "1d20";
-            const regex = /(\d+|)d?(\d+|)\+?(\d+|)/i;
-            let parts = regex.exec(args[0]);
-            parts.splice(0, 1);
-            
-            if (parts[0] != '' && parts[1] == '') {
-                parts[1] = parts[0];
-                parts[0] = 1;
-            } 
-            if (parts[0] == '') parts[0] = 1;
-            if (parts[1] == '') parts[1] = 20;
-            if (parts[2] == '') parts[2] = 0;
-
-            for (let i = 0; i < parts.length; i++) {
-                if (!(parts[i] instanceof Number)) parts[i] = parseInt(parts[i]);
-                if (parts[i] > 100) parts[i] = 100;
-            }
-
-            let rolls = new Array();
-            for (let i = 0; i < parts[0]; i++) rolls[i] = Math.floor(Math.random() * parts[1] + 1);
-            let roll = parts[0] + 'd' + parts[1] + '+' + parts[2];
-
-            let sum = 0;
-            for (i of rolls) sum += i;
-            sum += parts[2];
-
-            print(msg, new discord.RichEmbed({
-                "color": SUCCESS_COLOR,
-                "title": roll,
-                "description": '*' + rolls.join('*\n*') + '*',
-                "fields": [
-                    {
-                        "name": "Final Value: (+" + parts[2] + ')',
-                        "value": "**" + sum.toString() + "**"
-                    }
-                ]
-            }));
-        },
-        syntax: "roll (dice notation)",
-        info: "Rolls a dice.",
-        permissions: ["SEND_MESSAGES"]
-    },
-    "db": {
-        execute: function(msg, args) {
-            if (args[0] == undefined) args[0] = "";
-            let api = "https://danbooru.donmai.us/posts.json?utf8=%E2%9C%93&limit=1&random=true&tags=" + args[0] + '+';
-            api += (args[1] == "true" || args[1] == "yes" || args[1] == "nsfw" || args[1] == "hentai") ? "rating:e" : "rating:s";
-            let channel = msg.channel;
-
-            channel.startTyping();
-            getJSON(api, (res) => {
-                if (res.length == 0 || res.success == false) {
-                    print(msg, new discord.RichEmbed({
-                        "color": ERROR_COLOR,
-                        "title": "No Image Found."
-                    }));
-                } else {
-                    let post = res[0];
-                    let img = post.hasOwnProperty("file_url") ? post["file_url"] : post["source"];
-                    print(msg, new discord.RichEmbed({
-                        "title": post["tag_string_artist"],
-                        "url": "https://danbooru.donmai.us/posts/" + post["id"],
-                        "color": SUCCESS_COLOR,
-                        "footer": {
-                            "text": (post["rating"] == 's' ? "Safe For Work" : "Not Safe For Work")
-                        },
-                        "timestamp": post["updated_at"],
-                        "author": {
-                          "name": "Danbooru",
-                          "url": "https://danbooru.donmai.us/"
-                        },
-                        "image": {
-                            "url": img
-                        }
-                    }));
-                }
-                channel.stopTyping();
-            });
-        },
-        syntax: "db (tag) (nsfw?)",
-        info: "Retrieves an image from Danbooru.",
-        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
-    },
-    "md": {
-        execute: function(msg, args) {
-            const api = "https://mangadex.org/";
-
-            const onlyDigits = /^\d+$/;
-            const searchId = /<a.*href="\/title\/(\d+)\/.+".*>/mi;
-
-            let channel = msg.channel;
-
-            const unknownManga = function() {
-                print(msg, new discord.RichEmbed({
-                    "color": ERROR_COLOR,
-                    "title": "Unknown Manga"
-                }));
-                if (channel.typing) channel.stopTyping();
-            }
-
-            if (args[0] == undefined) {
-                print(msg, new discord.RichEmbed({
-                    "color": ERROR_COLOR,
-                    "title": "Please enter a MangaDex ID or Manga Title"
-                }));
-                return;
-            }
-            
-            const getManga = (mangaId) => {
-                getJSON(api + "api/manga/" + mangaId, (res)=>{
-                    if (res.length == 0 || res.status == "Manga ID does not exist.") {
-                        unknownManga();
-                    } else {
-                        let manga = res["manga"];
-                        let description = parseMarkdown(manga["description"]);
-                        if (description.length >= 1024) description = description.substring(0, 1024) + "...";
-
-                        let chapters = res["chapter"];
-                        let latestChapter = {
-                            "title": "There are no chapters in your language.", 
-                            "url": api + "manga/" + mangaId, 
-                            "timestamp": 0,
-                            "volume": "",
-                            "chapter": ""
-                        };
-                        if (chapters != null && chapters != undefined) {
-                            for (i of Object.keys(chapters)) {
-                                if (chapters[i].lang_code == "gb" && latestChapter.timestamp <= chapters[i].timestamp) {
-                                    latestChapter = chapters[i];
-                                    latestChapter.id = i;
-                                    latestChapter.url = api + "chapter/" + i;
-                                    if (latestChapter.title == "") latestChapter.title = "Chapter";
-                                    if (latestChapter.volume != "") latestChapter.volume = "Vol. " + latestChapter.volume;
-                                    if (latestChapter.chapter != "") latestChapter.chapter = "Ch. " + latestChapter.chapter;
-                                }
-                            }
-                        }
-                        
-
-                        print(msg, new discord.RichEmbed({
-                            "title": manga["title"],
-                            "url": api + "manga/" + mangaId,
-                            "color": SUCCESS_COLOR,
-                            "description": description,
-                            "author": {
-                                "name": "MangaDex",
-                                "url": "https://mangadex.org/"
-                            },
-                            "footer": {
-                                "text": manga["lang_name"],
-                                "icon_url": api + "images/flags/" + manga["lang_flag"] + ".png"
-                            },
-                            "thumbnail": {
-                                "url": "https://mangadex.org" + manga["cover_url"]
-                            },
-                            "fields": [
-                                {
-                                    "name": "Author",
-                                    "value": manga["author"],
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Artist",
-                                    "value": manga["artist"],
-                                    "inline": true
-                                },
-                                {
-                                    "name": "Most Recent Chapter: " + latestChapter.volume + " " + latestChapter.chapter,
-                                    "value": "[" + (latestChapter.title) +"](" + latestChapter.url + ")"
-                                }
-                            ]
-                        }));
-                        channel.stopTyping();
-                    }
-                }); 
-            }
-
-            channel.startTyping();
-            if (onlyDigits.test(args[0]) && args.length == 1) {
-                getManga(args[0]);
-            } else { //Title Search
-                getHttp(api + "quick_search/" + encodeURI(args.join(" ")), (res)=>{
-                    let groups = searchId.exec(res);
-                    if (groups != undefined && groups != null) getManga(groups[1]);
-                    else unknownManga();
-                });
-            }
-        },
-        syntax: "md [id/title]",
-        info: "Retrieves readable manga from MangaDex.",
-        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
-    },
-    "xkcd": {
-        execute: function(msg, args) {
-            const api = "https://xkcd.com/";
-            const suffix = "info.0.json";
-
-            let request = api;
-            if (args[0] == undefined) request += suffix;
-            else request += args[0] + "/" + suffix;
-
-            const explainApi = "https://www.explainxkcd.com/wiki/index.php/";
-
-            getJSON(request, (res)=>{
-                if (res.length == 0) {
-                    print(msg, new discord.RichEmbed({
-                        "color": ERROR_COLOR,
-                        "title": "Unknown Comic"
-                    }));
-                } else {
-                    print(msg, new discord.RichEmbed({
-                        "title": res["safe_title"],
-                        "url": api + res["num"],
-                        "color": SUCCESS_COLOR,
-                        "description": res["alt"] + "\n\n[Explanation](" + explainApi + res["num"] + ")",
-                        "timestamp": (new Date(parseInt(res["year"]), parseInt(res["month"]) - 1, parseInt(res["day"]))).toISOString(),
-                        "author": {
-                          "name": "xkcd",
-                          'url': "https://xkcd.com/"
-                        },
-                        "image": {
-                            "url": res["img"]
-                        }
-                    }));
-                }
-            });
-        },
-        syntax: "xkcd (number)",
-        info: "Retrieves a XKCD comic.",
-        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
-    },
-    "bool": {
-        execute: function(msg, args) {
-            const api = "https://yesno.wtf/api";
-
-            if (args[0] == undefined) args[0] = "";
-            else args[0] = "`" + args.join(" ") + "`";
-
-            getJSON(api, (res)=>{
-                if (res.length == 0) {
-                    print(msg, new discord.RichEmbed({
-                        "color": ERROR_COLOR,
-                        "tile": "Cannot Access API"
-                    }));
-                } else {
-                    print(msg, new discord.RichEmbed({
-                        "color": SUCCESS_COLOR,
-                        "author": {
-                            "name": "yesno.wtf",
-                            "url": "https://yesno.wtf/"
-                        },
-                        "title": args[0] + " **" + res["answer"].toUpperCase() + "**",
-                        "image": {
-                            "url": res["image"]
-                        }
-                    }))
-                }
-            });
-        },
-        syntax: "bool (question)",
-        info: "Answers your boolean questions (Yes or No).",
-        permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
-    },
-    "stats": {
-        execute: function(msg, args) {
-            print(msg, new discord.RichEmbed({
-                "color": SUCCESS_COLOR,
-                "author": {
-                    "name": cfg.name,
-                    "url": "https://github.com/midymyth/isla-discordbot"
-                },
-                "thumbnail": {
-                    "url": app.iconURL
-                },
-                "fields": [
-                    {
-                        "name": "Online Time",
-                        "value": (bot.uptime/1000).toString() + " seconds"
-                    },
-                    {
-                        "name": "Online Since",
-                        "value": bot.readyAt.toDateString()
-                    },
-                    {
-                        "name": "Joined Servers",
-                        "value": bot.guilds.size
-                    },
-                    {
-                        "name": "Joined Channels",
-                        "value": bot.channels.size
-                    }
-                ]
-            }));
-        },
-        syntax: "stats",
-        info: "Displays the stats of this bot",
-        permissions: ["SEND_MESSAGES"]
-    }
+    if (content instanceof String) return msg.channel.send(content);
+    return msg.channel.send("", new discord.RichEmbed(content));
 }
 
 function getPermission(msg, req) {
     if (msg.channel instanceof discord.DMChannel || msg.author.id == app.owner.id) return true;
     return msg.channel.permissionsFor(msg.member).has(req);
 }
+
+module.exports.print = print;
+module.exports.getPermission = getPermission;
 
 function parseCommand(msg) {
     let args = msg.content.split(cfg.prefix)[1].split(' ');
@@ -451,137 +107,34 @@ function parseCommand(msg) {
     }
     if (commands[command] == null) return;
     if (!getPermission(msg, commands[command].permissions)) {
-        print(msg, new discord.RichEmbed({
+        print(msg, {
             "color": ERROR_COLOR,
             "title": "You do not have permission."
-        }));
+        });
         return;
     }
     
-    commands[command].execute(msg, args);
+    commands[command].execute(msg, args, module.exports);
 }
 
 function parseArgument(arg, i, array) {
     array[i] = encodeURI(arg);
 }
 
-function parseMarkdown(str) {
-    const patterns = {
-        "[i]": "*",
-        "[/i]": "*",
-        "[b]": "**",
-        "[/b]": "**",
-        "&quot;": '"',
-        "&amp;": "&",
-        "&lt;": "<",
-        "&gt;": ">",
-        "&rsquo;": "'",
-        "&lsquo;": "'"
-    }
-
-    str = decodeURI(str);
-
-    let oldStr = "";
-    while(oldStr != str) {
-        oldStr = str;
-        for (i of Object.keys(patterns)) str = str.replace(i, patterns[i]);
-    }
-    return str;
-}
-
-function getHttp(url, callback) {
-    https.get(url, (res) => {
-        let str = "";
-
-        res.on("data", (data) => {
-            str += data;
-        });
-
-        res.on("end", () => {
-            callback(str);
-        });
-    }).on("error", (err) => {
-        callback(err);
-    });
-}
-
-function getJSON(url, callback) {
-    getHttp(url, (str)=>{
-        if (str[0] != '{' && str[0] != '[') {
-            callback([]);
-            return;
-        }
-        callback(JSON.parse(str));
-    });
-}
-
-terminal.on("line", (input) => { //Terminal Commands
-    let args = input.trim().split(' ');
-
-    switch(args[0]) {
-        default:
-            console.log("Unkown Command");
-            break;
-        case "exit":
-        case "end":
-        case "kill":
-        case "stop":
-            exit();
-            break;
-        case "print":
-        case "say":
-        case "echo":
-            if (args[1] == undefined) break;
-            let channel = bot.channels.get(args[1]);
-            args.splice(0, 2);
-            channel.send(args.join(' '));
-            break;
-        case "debug":
-            console.log(bot);
-            break;
-        case "config":
-            console.log(cfg);
-            break;
-        case "meta":
-        case "app":
-        case "oauth2":
-            console.log(app);
-            break;
-        case "status":
-            switch (status) {
-                case 0:
-                    console.log("Offline");
-                    break;
-                case 1:
-                    console.log("Booting Up");
-                    break;
-                case 2:
-                    console.log("Online");
-                    break;
-                case 3:
-                    console.log("Shutting Down");
-                    break;
-            }
-            break;
-    }
-});
-
-terminal.on("SIGINT", () => {
-    exit();
-});
-
-process.on('unhandledRejection', (reason) => {
-    console.log(reason);
-    exit();
-});
-
 function exit() {
     status = 3;
     bot.destroy().then(()=> {
+        status = 0;
         console.log(cfg.name + " offline.");
         terminal.close();
         process.exit();
     }).catch(()=> {
-        console.log("Cannot log out.");
+        status = 2;
+        console.log("Cannot log out. Staying online.");
     }); 
+}
+
+module.exports.exit = function() {
+    console.log("Exiting from outside of main module.");
+    exit();
 }

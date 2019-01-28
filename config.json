@@ -3,6 +3,18 @@
     "name": "Isla Bot",
     "simpleName": "islabot",
     "prefix": ";",
+    "aboutCommand": "about",
+    "commands": {
+        "about": "./commands/about.js",
+        "bool": "./commands/bool.js",
+        "commands": "./commands/commands.js",
+        "db": "./commands/danbooru.js",
+        "md": "./commands/mangadex.js",
+        "permission": "./commands/permission.js",
+        "roll": "./commands/roll.js",
+        "stats": "./commands/stats.js",
+        "xkcd": "./commands/xkcd.js"
+    },
     "aliases": {
         "r": "roll",
         "help": "commands",
