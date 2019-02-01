@@ -3,7 +3,6 @@ const bot = new discord.Client();
 module.exports.bot = bot;
 
 const terminal = require("./js/terminal");
-const util = require("./js/util.js");
 
 module.exports.SUCCESS_COLOR = 3120179;
 module.exports.ERROR_COLOR = 12337730;

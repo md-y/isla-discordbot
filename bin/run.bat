@@ -1,4 +1,4 @@
 @echo off
 title Isla Bot
-node .
+node ..\.
 pause
