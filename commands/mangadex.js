@@ -12,9 +12,15 @@ module.exports = {
         }
 
         msg.channel.startTyping();
-        if ((/^\d+$/).test(args[0])) loadManga(parseInt(args[0]), msg, index);
+        if ((/^\d+$/).test(args.join(""))) loadManga(parseInt(args[0]), msg, index);
         else api.Manga.search(args.join(" ")).then((res)=>{
-            loadManga(res[0], msg, index);
+            if (res.length == 0) {
+                msg.channel.stopTyping();
+                index.print(msg, {
+                    "color": index.ERROR_COLOR,
+                    "title": "No Manga Found."
+                });
+            } else loadManga(res[0], msg, index);
         });
     },
     syntax: "md [id/title]",
@@ -28,6 +34,7 @@ function loadManga(id, msg, index) {
         // Prepare Info
         let links = ""
         for (let i in manga.links) links += '[' + api.link[i].name + '](' + manga.links[i] + ')\n'; 
+        if (links.length == 0) links = "No Additional Links"
 
         // Print info
         msg.channel.stopTyping();
@@ -50,29 +57,38 @@ function loadManga(id, msg, index) {
             "fields": [
                 {
                     "name": "Author(s)",
-                    "value": manga.authors.join(", "),
+                    "value": manga.authors.length > 0 ? manga.authors.join(", ") : "No Authors",
                     "inline": true
                 },
                 {
                     "name": "Artist(s)",
-                    "value": manga.artists.join(", "),
+                    "value": manga.artists.length > 0 ? manga.artists.join(", ") : "No Artists",
                     "inline": true
                 },
                 {
                     "name": "Genres",
-                    "value": manga.genreNames.length > 0 ? manga.genreNames.join(", ") : "No Defined Genres."
+                    "value": manga.genreNames.length > 0 ? manga.genreNames.join("\n") : "No Defined Genres.",
+                    "inline": true
                 },
                 {
                     "name": "Links",
-                    "value": links
+                    "value": links,
+                    "inline": true
                 },
                 {
                     "name": "Most Recent Chapter " + (manga.chapters[0].chapter ? '('+ manga.chapters[0].chapter + ')' : ""),
-                    "value": "[" + manga.chapters[0].title +"](" + manga.chapters[0].getFullURL("id") + ")"
-                }
+                    "value": "[" + (manga.chapters[0].title ? manga.chapters[0].title : "Chapter") +"](" + manga.chapters[0].getFullURL("id") + ")",
+                    "inline": true
+                },
+                {
+                    "name": "Hentai?",
+                    "value": manga.hentai ? "Yes": "No",
+                    "inline": true
+                },
             ]
         });
     }).catch((err)=>{
+        msg.channel.stopTyping();
         index.print(msg, {
             "color": index.ERROR_COLOR,
             "title": "Could not load manga."
