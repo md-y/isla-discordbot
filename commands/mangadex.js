@@ -11,8 +11,9 @@ module.exports = {
             return;
         }
 
+        msg.channel.startTyping();
         if ((/^\d+$/).test(args[0])) loadManga(parseInt(args[0]), msg, index);
-        else api.Manga.search(args[0]).then((res)=>{
+        else api.Manga.search(args.join(" ")).then((res)=>{
             loadManga(res[0], msg, index);
         });
     },
@@ -24,9 +25,15 @@ module.exports = {
 function loadManga(id, msg, index) {
     let manga = new api.Manga();
     manga.fill(id).then(()=>{
+        // Prepare Info
+        let links = ""
+        for (let i in manga.links) links += '[' + api.link[i].name + '](' + manga.links[i] + ')\n'; 
+
+        // Print info
+        msg.channel.stopTyping();
         index.print(msg, {
             "title": manga.title,
-            "url": manga.getFullURL("cover"),
+            "url": manga.getFullURL("id"),
             "color": index.SUCCESS_COLOR,
             "description": util.parseMarkdown(manga.description.slice(0, 1000)),
             "author": {
@@ -52,7 +59,15 @@ function loadManga(id, msg, index) {
                     "inline": true
                 },
                 {
-                    "name": "Latest Chapter",
+                    "name": "Genres",
+                    "value": manga.genreNames.length > 0 ? manga.genreNames.join(", ") : "No Defined Genres."
+                },
+                {
+                    "name": "Links",
+                    "value": links
+                },
+                {
+                    "name": "Most Recent Chapter " + (manga.chapters[0].chapter ? '('+ manga.chapters[0].chapter + ')' : ""),
                     "value": "[" + manga.chapters[0].title +"](" + manga.chapters[0].getFullURL("id") + ")"
                 }
             ]
