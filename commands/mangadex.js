@@ -23,7 +23,7 @@ module.exports = {
             } else loadManga(res[0], msg, index);
         });
     },
-    syntax: "md [id/title]",
+    syntax: "[id/title]",
     info: "Retrieves readable manga from MangaDex.",
     permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
 };

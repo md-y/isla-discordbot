@@ -35,7 +35,7 @@ module.exports = {
             }
         });
     },
-    syntax: "xkcd (number)",
+    syntax: "(number)",
     info: "Retrieves a XKCD comic.",
     permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
 };

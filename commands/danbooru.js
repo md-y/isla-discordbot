@@ -37,7 +37,7 @@ module.exports = {
             channel.stopTyping();
         });
     },
-    syntax: "db (tag) (nsfw?)",
+    syntax: "(tag) (nsfw?)",
     info: "Retrieves an image from Danbooru.",
     permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
 };

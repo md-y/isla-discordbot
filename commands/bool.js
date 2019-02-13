@@ -28,7 +28,7 @@ module.exports = {
             }
         });
     },
-    syntax: "bool (question)",
+    syntax: "(question)",
     info: "Answers your boolean questions (Yes or No).",
     permissions: ["SEND_MESSAGES", "ATTACH_FILES"]
 };

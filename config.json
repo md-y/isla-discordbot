@@ -8,16 +8,20 @@
         "about": "./commands/about.js",
         "bool": "./commands/bool.js",
         "commands": "./commands/commands.js",
-        "db": "./commands/danbooru.js",
-        "md": "./commands/mangadex.js",
+        "danbooru": "./commands/danbooru.js",
+        "mangadex": "./commands/mangadex.js",
         "permission": "./commands/permission.js",
         "roll": "./commands/roll.js",
         "stats": "./commands/stats.js",
         "xkcd": "./commands/xkcd.js"
     },
     "aliases": {
+        "md": "mangadex",
+        "db": "danbooru",
+        "cmd": "commands",
         "r": "roll",
         "help": "commands",
-        "jojo": "db jojo_no_kimyou_na_bouken"
+        "jojo": "danbooru jojo_no_kimyou_na_bouken",
+        "touhou": "danbooru touhou"
     }
 }

@@ -29,7 +29,7 @@ module.exports = {
             ]
         });
     },
-    syntax: "stats",
+    syntax: "",
     info: "Displays the stats of this bot",
     permissions: ["SEND_MESSAGES"]
 };

@@ -38,7 +38,7 @@ module.exports = {
             ]
         });
     },
-    syntax: "roll (dice notation)",
+    syntax: "(dice notation)",
     info: "Rolls a dice.",
     permissions: ["SEND_MESSAGES"]
 }

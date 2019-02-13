@@ -9,7 +9,7 @@ module.exports = {
             "description": "Required Permissions: " + perms.join(", ")
         });
     },
-    syntax: "permission [command]",
+    syntax: "[command]",
     info: "Checks to see if you can execute a command.",
     permissions: ["SEND_MESSAGES"]
 };
