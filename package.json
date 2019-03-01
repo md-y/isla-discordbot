@@ -1,6 +1,6 @@
 {
   "name": "isla-discordbot",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "A discord bot that can do things.",
   "main": "index.js",
   "scripts": {
