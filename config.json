@@ -13,7 +13,8 @@
         "permission": "./commands/permission.js",
         "roll": "./commands/roll.js",
         "stats": "./commands/stats.js",
-        "xkcd": "./commands/xkcd.js"
+        "xkcd": "./commands/xkcd.js",
+        "echo": "./commands/echo.js"
     },
     "aliases": {
         "md": "mangadex",
