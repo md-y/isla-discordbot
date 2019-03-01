@@ -9,3 +9,10 @@ Made in [node.js](https://nodejs.org/) using [discord.js](https://discord.js.org
 ```
 npm install . github midymyth/isla-discordbot
 ```
+
+# Examples
+![Commands Screenshot](bin/doc/example.jpg)
+
+### Command Examples
+![Command Screenshot 1](bin/doc/command_example_1.jpg)
+![Command Screenshot 2](bin/doc/command_example_2.jpg)
