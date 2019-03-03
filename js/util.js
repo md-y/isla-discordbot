@@ -2,26 +2,29 @@ const index = require("../index.js");
 const https = require("https");
 
 module.exports.parseMarkdown = function(str) {
-    const patterns = {
-        "[i]": "*",
-        "[/i]": "*",
-        "[b]": "**",
-        "[/b]": "**",
-        "&quot;": '"',
-        "&amp;": "&",
-        "&lt;": "<",
-        "&gt;": ">",
-        "&rsquo;": "'",
-        "&lsquo;": "'"
-    }
+    const patterns = [
+        // Generic HTML to Markdown
+        ["**$1**", /\[b\](.*?)\[\/b\]/gmi], // [b] to **
+        ["*$1*", /\[i\](.*?)\[\/i\]/gmi], // [i] to *
+        ["__$1__", /\[u\](.*?)\[\/u\]/gmi], // [u] to __
+        ["~~$1~~", /\[s\](.*?)\[\/s\]/gmi], // [s] to ~~
+        ["||$1||", /\[spoiler\](.*?)\[\/spoiler\]/gmi], // [spoiler] to ||
+        ["\"", /&quot;/gmi, /\[quote\]/gmi, /\[\/quote\]/gmi], // &quot; and [quote] to "
+        ["```$1```", /\[code\](.*?)\[\/code\]/gmi], // [code] to ```
+        ["&", /&amp/gmi], // &amp; to &
+        ["<", /&lt;/gmi], // &lt; to <
+        [">", /&gt;/gmi], // &gt; to >
+        ["'", /&rsquo;/gmi, /(&lsquo;)/gmi], // &rsquo; and &lsquo; to '
+        ["[$1 ]($2)", /\[url=(.*?)\](.*?)\[\/url\]/gmi], // Links
+
+        // Remove These Elements
+        ["", /\[hr\]/gmi, /\[\/hr\]/gmi, /\[ol\]/gmi, /\[\/ol\]/gmi, /\[left\]/gmi, /\[\/left\]/gmi,
+        /\[ul\]/gmi, /\[\/ul\]/gmi, /\[sub\]/gmi, /\[\/sub\]/gmi, /\[sup\]/gmi, /\[\/sup\]/gmi, /\[img\]/gmi,
+        /\[\/img\]/gmi, /\[right\]/gmi, /\[\/right\]/gmi, /\[center\]/gmi, /\[\/center\]/gmi] 
+    ]
 
     str = decodeURI(str);
-
-    let oldStr = "";
-    while(oldStr != str) {
-        oldStr = str;
-        for (i of Object.keys(patterns)) str = str.replace(i, patterns[i]);
-    }
+    for (i of patterns) for (r of i.slice(1)) str = str.replace(r, i[0]);
     return str;
 }
 
