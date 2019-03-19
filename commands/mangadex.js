@@ -21,6 +21,8 @@ module.exports = {
                     "title": "No Manga Found."
                 });
             } else loadManga(res[0], msg, index);
+        }).catch((err) => {
+            printError(err, msg, index);
         });
     },
     syntax: "[id/title]",
@@ -87,12 +89,16 @@ function loadManga(id, msg, index) {
                 },
             ]
         });
-    }).catch((err)=>{
-        msg.channel.stopTyping();
-        index.print(msg, {
-            "color": index.ERROR_COLOR,
-            "title": "Could not load manga.",
-            "description": err
-        });
+    }).catch((err) => {
+        printError(err, msg, index);
+    });
+}
+
+function printError(err, msg, index) {
+    msg.channel.stopTyping();
+    index.print(msg, {
+        "color": index.ERROR_COLOR,
+        "title": "Could not load manga.",
+        "description": err
     });
 }
