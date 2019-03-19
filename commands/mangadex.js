@@ -91,7 +91,8 @@ function loadManga(id, msg, index) {
         msg.channel.stopTyping();
         index.print(msg, {
             "color": index.ERROR_COLOR,
-            "title": "Could not load manga."
+            "title": "Could not load manga.",
+            "description": err
         });
     });
 }
