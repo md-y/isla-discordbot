@@ -24,5 +24,8 @@
         "help": "commands",
         "jojo": "danbooru jojo_no_kimyou_na_bouken",
         "touhou": "danbooru touhou"
+    },
+    "settings": {
+        "mangadex": ["Username", "Password"]
     }
 }

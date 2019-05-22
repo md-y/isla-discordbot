@@ -5,3 +5,5 @@ package-lock.json
 config-override.json
 
 npm-debug.log
+
+md-cache.txt

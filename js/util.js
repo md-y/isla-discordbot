@@ -1,4 +1,3 @@
-const index = require("../index.js");
 const https = require("https");
 
 module.exports.parseMarkdown = function(str) {

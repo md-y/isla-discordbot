@@ -12,18 +12,40 @@ module.exports = {
         }
 
         msg.channel.startTyping();
-        if ((/^\d+$/).test(args.join(""))) loadManga(parseInt(args[0]), msg, index);
-        else api.Manga.search(args.join(" ")).then((res)=>{
-            if (res.length == 0) {
-                msg.channel.stopTyping();
-                index.print(msg, {
-                    "color": index.ERROR_COLOR,
-                    "title": "No Manga Found."
+
+        // Function called after login or login fail.
+        const executeMangaCall = function() {
+            if (!isNaN(args.join(""))) loadManga(parseInt(args[0]), msg, index);
+            else {
+                api.Manga.search(args.join(" ")).then((res)=>{
+                    if (res.length == 0) {
+                        msg.channel.stopTyping();
+                        index.print(msg, {
+                            "color": index.ERROR_COLOR,
+                            "title": "No Manga Found."
+                        });
+                    } else loadManga(res[0], msg, index);
+                }).catch((err) => {
+                    printError(err, msg, index);
                 });
-            } else loadManga(res[0], msg, index);
-        }).catch((err) => {
-            printError(err, msg, index);
-        });
+            }
+        }
+
+        // Cache login
+        if (index.cfg.settings.mangadex && !api.agent.sessionId) {
+            console.log("Logging into MangaDex...")
+            api.agent.cacheLogin("md-cache.txt", index.cfg.settings.mangadex[0], index.cfg.settings.mangadex[1], true).then(()=>{
+                console.log("Logged into MangaDex. (Cached)");
+                executeMangaCall();
+            }).catch((err) => {
+                console.log(err);
+                executeMangaCall();
+            });
+        } else {
+            executeMangaCall();
+        }
+
+        
     },
     syntax: "[id/title]",
     info: "Retrieves readable manga from MangaDex.",
