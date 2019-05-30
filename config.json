@@ -14,7 +14,8 @@
         "roll": "./commands/roll.js",
         "stats": "./commands/stats.js",
         "xkcd": "./commands/xkcd.js",
-        "echo": "./commands/echo.js"
+        "echo": "./commands/echo.js",
+        "saucenao": "./commands/saucenao.js"
     },
     "aliases": {
         "md": "mangadex",
@@ -22,10 +23,15 @@
         "cmd": "commands",
         "r": "roll",
         "help": "commands",
+        "sauce": "saucenao",
+        "source": "saucenao",
+        "whatsthis": "saucenao",
+        "s": "saucenao",
         "jojo": "danbooru jojo_no_kimyou_na_bouken",
         "touhou": "danbooru touhou"
     },
     "settings": {
-        "mangadex": ["Username", "Password"]
+        "mangadex": ["Username", "Password"],
+        "saucenao": null
     }
 }
