@@ -10,6 +10,8 @@ Made in [node.js](https://nodejs.org/) using [discord.js](https://discord.js.org
 npm install . github midymyth/isla-discordbot
 ```
 
+[Help](https://github.com/md-y/isla-discordbot/wiki) Documentation for Hosts.
+
 # Examples
 ![Commands Screenshot](bin/doc/example.jpg)
 
