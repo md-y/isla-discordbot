@@ -23,6 +23,6 @@
   "homepage": "https://github.com/midymyth/isla-discordbot#readme",
   "dependencies": {
     "discord.js": "^11.5.0",
-    "mangadex-full-api": "^2.1.0"
+    "mangadex-full-api": "^2.3.0"
   }
 }
