@@ -15,7 +15,8 @@
         "stats": "./commands/stats.js",
         "xkcd": "./commands/xkcd.js",
         "echo": "./commands/echo.js",
-        "saucenao": "./commands/saucenao.js"
+        "saucenao": "./commands/saucenao.js",
+        "clear": "./commands/clear.js"
     },
     "aliases": {
         "md": "mangadex",
@@ -28,7 +29,8 @@
         "whatsthis": "saucenao",
         "s": "saucenao",
         "jojo": "danbooru jojo_no_kimyou_na_bouken",
-        "touhou": "danbooru touhou"
+        "touhou": "danbooru touhou",
+        "clr": "clear"
     },
     "settings": {
         "mangadex": ["Username", "Password"],
